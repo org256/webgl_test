@@ -1,8 +1,25 @@
 import { initBuffers } from "./init-buffers.js";
 import { drawScene } from "./draw-scene.js";
 
-let cubeRotation = 0.0;
+let cube = {
+  position: [-0.0, 0.0, -6.0],
+  velocity: [0.0, 0.0, 0.0],
+  target_velocity: [0.0, 0.0, 0.0],
+  max_velocity: [10.0, 15.0, 1.0],
+  acceleration: [75.0, 250.0, 1.0],
+  deceleration: [100.0, 75.0, 1.0],
+  grounded: true,
+  jumping: false
+};
+let rotation = 0.0;
 let deltaTime = 0;
+
+let left_key_binding = 37;
+let right_key_binding = 39;
+let up_key_binding = 38;
+let down_key_binding = 40;
+
+let pressed_keys = [];
 
 main();
 
@@ -108,7 +125,19 @@ function main() {
   // Flip image pixels into the bottom-to-top order that WebGL expects.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
+  window.addEventListener("keydown", (e) =>  {
+    if (e.repeat) return;
+    pressed_keys[e.which] = true;
+  });
+  
+  window.addEventListener("keyup", (e) =>  {
+    pressed_keys[e.which] = false;
+  });
+  
   let then = 0;
+
+  let scene = [];
+  scene.push(cube);
 
   // Draw the scene repeatedly
   function render(now) {
@@ -116,8 +145,8 @@ function main() {
     deltaTime = now - then;
     then = now;
 
-    drawScene(gl, programInfo, buffers, texture, cubeRotation);
-    cubeRotation += deltaTime;
+    updateScene(cube, scene, pressed_keys, deltaTime);
+    drawScene(gl, programInfo, buffers, texture, scene);
 
     requestAnimationFrame(render);
   }
@@ -246,4 +275,92 @@ function loadTexture(gl, url) {
 
 function isPowerOf2(value) {
   return (value & (value - 1)) === 0;
+}
+
+function rotateCube(cube) {
+  cube.rotationMatrix = mat4.create();
+  mat4.rotate(
+    cube.rotationMatrix, // destination matrix
+    cube.rotationMatrix, // matrix to rotate
+    rotation, // amount to rotate in radians
+    [0, 0, 1]
+  ); // axis to rotate around (Z)
+  mat4.rotate(
+    cube.rotationMatrix, // destination matrix
+    cube.rotationMatrix, // matrix to rotate
+    rotation * 0.7, // amount to rotate in radians
+    [0, 1, 0]
+  ); // axis to rotate around (Y)
+  mat4.rotate(
+    cube.rotationMatrix, // destination matrix
+    cube.rotationMatrix, // matrix to rotate
+    rotation * 0.3, // amount to rotate in radians
+    [1, 0, 0]
+  ); // axis to rotate around (X)
+  rotation += deltaTime;
+}
+
+function updatePlayer(cube, pressed_keys, elapsed) {
+  if (pressed_keys[left_key_binding]) {
+    if (cube.grounded) {
+      cube.target_velocity[0] = -cube.max_velocity[0];
+      cube.velocity[0] = Math.max(cube.velocity[0] - (cube.acceleration[0] * elapsed), -cube.max_velocity[0]);
+      cube.velocity[0] += Math.sign(cube.velocity[0]) * (cube.deceleration[0] * elapsed);
+    }
+  }
+  if (pressed_keys[right_key_binding]) {
+    if (cube.grounded) {
+      cube.target_velocity[0] = cube.max_velocity[0];
+      cube.velocity[0] = Math.min(cube.velocity[0] + (cube.acceleration[0] * elapsed), cube.max_velocity[0]);
+      cube.velocity[0] += Math.sign(cube.velocity[0]) * (cube.deceleration[0] * elapsed);
+    }
+  }
+  if (pressed_keys[up_key_binding]) {
+    if (cube.grounded) {
+      cube.jumping = true;
+      cube.grounded = false;
+    }
+    if (cube.jumping) {
+      cube.velocity[1] += (cube.acceleration[1] * elapsed);
+      if (cube.velocity[1] >= cube.max_velocity[1]) {
+        cube.velocity[1] = cube.max_velocity[1];
+        cube.jumping = false;
+      }
+    }
+  } else {
+    cube.jumping = false;
+  }
+  if (pressed_keys[down_key_binding]) {
+    cube.position[1] -= 1;
+  }
+}
+
+function updatePhysics(scene, elapsed) {
+  for (var cube of scene) {
+    if (cube.grounded) {
+      cube.velocity[0] = Math.sign(cube.velocity[0]) * Math.max(Math.abs(cube.velocity[0]) - (cube.deceleration[0] * elapsed), 0);
+    }
+  
+    if (!cube.grounded) {
+      cube.velocity[1] -= (cube.deceleration[1] * elapsed);
+    }
+  
+    cube.position[0] += (elapsed * cube.velocity[0])
+    cube.position[1] += (elapsed * cube.velocity[1])
+  
+    if (cube.position[1] <= 0) {
+      cube.position[1] = 0;
+      cube.velocity[1] = 0;
+      cube.grounded = true;
+    }
+
+    console.log(cube.position);
+  }
+}
+
+function updateScene(player, scene, pressed_keys, elapsed) {
+  rotateCube(player);
+
+  updatePlayer(player, pressed_keys, elapsed);
+  updatePhysics(scene, elapsed);
 }

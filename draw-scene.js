@@ -1,4 +1,4 @@
-function drawScene(gl, programInfo, buffers, texture, cubeRotation) {
+function drawScene(gl, programInfo, buffers, texture, scene) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
   gl.clearDepth(1.0); // Clear everything
   gl.enable(gl.DEPTH_TEST); // Enable depth testing
@@ -25,86 +25,77 @@ function drawScene(gl, programInfo, buffers, texture, cubeRotation) {
   // as the destination to receive the result.
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
-  // Set the drawing position to the "identity" point, which is
-  // the center of the scene.
-  const modelViewMatrix = mat4.create();
+  for (let cube of scene) {
+    // Set the drawing position to the "identity" point, which is
+    // the center of the scene.
+    const modelViewMatrix = mat4.create();
 
-  // Now move the drawing position a bit to where we want to
-  // start drawing the square.
-  mat4.translate(
-    modelViewMatrix, // destination matrix
-    modelViewMatrix, // matrix to translate
-    [-0.0, 0.0, -6.0]
-  ); // amount to translate
+    // Now move the drawing position a bit to where we want to
+    // start drawing the square.
+    mat4.translate(
+      modelViewMatrix, // destination matrix
+      modelViewMatrix, // matrix to translate
+      cube.position
+    ); // amount to translate
 
-  mat4.rotate(
-    modelViewMatrix, // destination matrix
-    modelViewMatrix, // matrix to rotate
-    cubeRotation, // amount to rotate in radians
-    [0, 0, 1]
-  ); // axis to rotate around (Z)
-  mat4.rotate(
-    modelViewMatrix, // destination matrix
-    modelViewMatrix, // matrix to rotate
-    cubeRotation * 0.7, // amount to rotate in radians
-    [0, 1, 0]
-  ); // axis to rotate around (Y)
-  mat4.rotate(
-    modelViewMatrix, // destination matrix
-    modelViewMatrix, // matrix to rotate
-    cubeRotation * 0.3, // amount to rotate in radians
-    [1, 0, 0]
-  ); // axis to rotate around (X)
+    if (cube.rotationMatrix) {
+      mat4.multiply(
+        modelViewMatrix,
+        modelViewMatrix,
+        cube.rotationMatrix
+      );
+    }
 
-  const normalMatrix = mat4.create();
-  mat4.invert(normalMatrix, modelViewMatrix);
-  mat4.transpose(normalMatrix, normalMatrix);
+    const normalMatrix = mat4.create();
+    mat4.invert(normalMatrix, modelViewMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
 
-  // Tell WebGL how to pull out the positions from the position
-  // buffer into the vertexPosition attribute.
-  setPositionAttribute(gl, buffers, programInfo);
+    // Tell WebGL how to pull out the positions from the position
+    // buffer into the vertexPosition attribute.
+    setPositionAttribute(gl, buffers, programInfo);
 
-  setTextureAttribute(gl, buffers, programInfo);
+    setTextureAttribute(gl, buffers, programInfo);
 
-  // Tell WebGL which indices to use to index the vertices
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+    // Tell WebGL which indices to use to index the vertices
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
-  setNormalAttribute(gl, buffers, programInfo);
+    setNormalAttribute(gl, buffers, programInfo);
 
-  // Tell WebGL to use our program when drawing
-  gl.useProgram(programInfo.program);
+    // Tell WebGL to use our program when drawing
+    gl.useProgram(programInfo.program);
 
-  // Set the shader uniforms
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.projectionMatrix,
-    false,
-    projectionMatrix
-  );
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.modelViewMatrix,
-    false,
-    modelViewMatrix
-  );
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.normalMatrix,
-    false,
-    normalMatrix
-  );
+    // Set the shader uniforms
+    gl.uniformMatrix4fv(
+      programInfo.uniformLocations.projectionMatrix,
+      false,
+      projectionMatrix
+    );
+    gl.uniformMatrix4fv(
+      programInfo.uniformLocations.modelViewMatrix,
+      false,
+      modelViewMatrix
+    );
+    gl.uniformMatrix4fv(
+      programInfo.uniformLocations.normalMatrix,
+      false,
+      normalMatrix
+    );
 
-  // Tell WebGL we want to affect texture unit 0
-  gl.activeTexture(gl.TEXTURE0);
+    // Tell WebGL we want to affect texture unit 0
+    gl.activeTexture(gl.TEXTURE0);
 
-  // Bind the texture to texture unit 0
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+    // Bind the texture to texture unit 0
+    gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  // Tell the shader we bound the texture to texture unit 0
-  gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
+    // Tell the shader we bound the texture to texture unit 0
+    gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
-  {
-    const vertexCount = 36;
-    const type = gl.UNSIGNED_SHORT;
-    const offset = 0;
-    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+    {
+      const vertexCount = 36;
+      const type = gl.UNSIGNED_SHORT;
+      const offset = 0;
+      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+    }
   }
 }
 
