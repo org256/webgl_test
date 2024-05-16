@@ -5,9 +5,10 @@ let cube = {
   position: [-0.0, 0.0, -6.0],
   velocity: [0.0, 0.0, 0.0],
   target_velocity: [0.0, 0.0, 0.0],
+  acceleration: [0.0, 0.0, 0.0],
   max_velocity: [10.0, 15.0, 1.0],
-  acceleration: [75.0, 250.0, 1.0],
-  deceleration: [100.0, 75.0, 1.0],
+  max_acceleration: [75.0, 250.0, 1.0],
+  max_deceleration: [100.0, 75.0, 1.0],
   grounded: true,
   jumping: false
 };
@@ -301,60 +302,64 @@ function rotateCube(cube) {
 }
 
 function updatePlayer(cube, pressed_keys, elapsed) {
-  if (pressed_keys[left_key_binding]) {
-    if (cube.grounded) {
+  if (cube.grounded) {
+    cube.target_velocity = [ 0.0, -Infinity, 0.0 ];
+    cube.acceleration = [ 0.0, -cube.max_deceleration[1], 0.0 ];
+    if (elapsed > 0.0) {
+      cube.acceleration[0] = -Math.sign(cube.velocity[0]) * Math.min(cube.max_deceleration[0], Math.abs(cube.velocity[0]) / elapsed);
+    }
+
+    if (pressed_keys[left_key_binding]) {
       cube.target_velocity[0] = -cube.max_velocity[0];
-      cube.velocity[0] = Math.max(cube.velocity[0] - (cube.acceleration[0] * elapsed), -cube.max_velocity[0]);
-      cube.velocity[0] += Math.sign(cube.velocity[0]) * (cube.deceleration[0] * elapsed);
+      cube.acceleration[0] = -cube.max_acceleration[0];
     }
-  }
-  if (pressed_keys[right_key_binding]) {
-    if (cube.grounded) {
+    if (pressed_keys[right_key_binding]) {
       cube.target_velocity[0] = cube.max_velocity[0];
-      cube.velocity[0] = Math.min(cube.velocity[0] + (cube.acceleration[0] * elapsed), cube.max_velocity[0]);
-      cube.velocity[0] += Math.sign(cube.velocity[0]) * (cube.deceleration[0] * elapsed);
+      cube.acceleration[0] = cube.max_acceleration[0];
     }
-  }
-  if (pressed_keys[up_key_binding]) {
-    if (cube.grounded) {
+    if (pressed_keys[down_key_binding]) {
+      cube.acceleration[1] = -cube.max_acceleration[1];
+    }
+    if (pressed_keys[up_key_binding]) {
       cube.jumping = true;
       cube.grounded = false;
     }
-    if (cube.jumping) {
-      cube.velocity[1] += (cube.acceleration[1] * elapsed);
-      if (cube.velocity[1] >= cube.max_velocity[1]) {
-        cube.velocity[1] = cube.max_velocity[1];
-        cube.jumping = false;
-      }
-    }
   } else {
+    cube.acceleration = [ 0.0, -cube.max_deceleration[1], 0.0 ];
+  }
+  if (!pressed_keys[up_key_binding]) {
     cube.jumping = false;
   }
-  if (pressed_keys[down_key_binding]) {
-    cube.position[1] -= 1;
+  if (cube.jumping) {
+    if (cube.velocity[1] >= cube.max_velocity[1]) {
+      cube.jumping = false;
+    }
+    cube.target_velocity[1] = cube.max_velocity[1];
+    cube.acceleration[1] = cube.max_acceleration[1];
   }
 }
 
 function updatePhysics(scene, elapsed) {
   for (var cube of scene) {
-    if (cube.grounded) {
-      cube.velocity[0] = Math.sign(cube.velocity[0]) * Math.max(Math.abs(cube.velocity[0]) - (cube.deceleration[0] * elapsed), 0);
+    for (let i = 0; i < 2; i++) {
+      cube.velocity[i] = cube.velocity[i] + (cube.acceleration[i] * elapsed);
+
+      let sign = Math.sign(cube.target_velocity[i]);
+      if ((sign * cube.velocity[i]) > (sign * cube.target_velocity[i])) {
+        cube.velocity[i] = cube.target_velocity[i];
+      }
+      cube.position[i] += (elapsed * cube.velocity[i])
     }
-  
-    if (!cube.grounded) {
-      cube.velocity[1] -= (cube.deceleration[1] * elapsed);
-    }
-  
-    cube.position[0] += (elapsed * cube.velocity[0])
-    cube.position[1] += (elapsed * cube.velocity[1])
-  
-    if (cube.position[1] <= 0) {
+  }
+}
+
+function updateGrounded(scene) {
+  for (var cube of scene) {
+    if (cube.position[1] < 0.0) {
       cube.position[1] = 0;
       cube.velocity[1] = 0;
       cube.grounded = true;
     }
-
-    console.log(cube.position);
   }
 }
 
@@ -363,4 +368,5 @@ function updateScene(player, scene, pressed_keys, elapsed) {
 
   updatePlayer(player, pressed_keys, elapsed);
   updatePhysics(scene, elapsed);
+  updateGrounded(scene);
 }
