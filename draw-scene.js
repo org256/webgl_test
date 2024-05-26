@@ -8,6 +8,10 @@ function drawScene(gl, programInfo, buffers, texture, scene) {
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  if (buffers == null) {
+    return;
+  }
+
   // Create a perspective matrix, a special matrix that is
   // used to simulate the distortion of perspective in a camera.
   // Our field of view is 45 degrees, with a width/height

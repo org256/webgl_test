@@ -119,7 +119,12 @@ function main() {
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
-  const buffers = initBuffers(gl);
+  let buffers = null;
+  fetch("cube.json").then(function(response){
+    response.json().then(function(json){
+      buffers = initBuffers(gl, json);
+    })
+  });
 
   // Load texture
   const texture = loadTexture(gl, "cubetexture.png");
