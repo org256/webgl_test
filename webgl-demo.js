@@ -22,6 +22,8 @@ let down_key_binding = 40;
 
 let pressed_keys = [];
 
+let textureCache = [];
+
 main();
 
 //
@@ -119,15 +121,19 @@ function main() {
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
-  let buffers = null;
+  cube.buffers = null;
   fetch("cube.json").then(function(response){
     response.json().then(function(json){
-      buffers = initBuffers(gl, json);
+      cube.buffers = initBuffers(gl, json);
+      // Load texture
+      let texture = textureCache[json.textureImage];
+      if (texture === undefined) {
+        texture = loadTexture(gl, json.textureImage);
+      }
+      cube.texture = texture;
     })
   });
 
-  // Load texture
-  const texture = loadTexture(gl, "cubetexture.png");
   // Flip image pixels into the bottom-to-top order that WebGL expects.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
@@ -152,7 +158,7 @@ function main() {
     then = now;
 
     updateScene(cube, scene, pressed_keys, deltaTime);
-    drawScene(gl, programInfo, buffers, texture, scene);
+    drawScene(gl, programInfo, scene);
 
     requestAnimationFrame(render);
   }

@@ -1,4 +1,4 @@
-function drawScene(gl, programInfo, buffers, texture, scene) {
+function drawScene(gl, programInfo, scene) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
   gl.clearDepth(1.0); // Clear everything
   gl.enable(gl.DEPTH_TEST); // Enable depth testing
@@ -7,10 +7,6 @@ function drawScene(gl, programInfo, buffers, texture, scene) {
   // Clear the canvas before we start drawing on it.
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  if (buffers == null) {
-    return;
-  }
 
   // Create a perspective matrix, a special matrix that is
   // used to simulate the distortion of perspective in a camera.
@@ -30,7 +26,18 @@ function drawScene(gl, programInfo, buffers, texture, scene) {
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
   for (let cube of scene) {
-    // Set the drawing position to the "identity" point, which is
+    let buffers = cube.buffers;
+    let texture = cube.texture;
+
+    if (buffers == null) {
+      return;
+    }
+  
+    if (texture == null) {
+      return;
+    }
+  
+      // Set the drawing position to the "identity" point, which is
     // the center of the scene.
     const modelViewMatrix = mat4.create();
 
