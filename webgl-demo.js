@@ -236,29 +236,12 @@ function loadTexture(gl, url) {
   const srcFormat = gl.RGBA;
   const srcType = gl.UNSIGNED_BYTE;
   const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    level,
-    internalFormat,
-    width,
-    height,
-    border,
-    srcFormat,
-    srcType,
-    pixel
-  );
+  gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, srcFormat, srcType, pixel);
 
   const image = new Image();
   image.onload = () => {
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      level,
-      internalFormat,
-      srcFormat,
-      srcType,
-      image
-    );
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
 
     // WebGL1 has different requirements for power of 2 images
     // vs non power of 2 images so check if the image is a
@@ -285,24 +268,9 @@ function isPowerOf2(value) {
 
 function rotateCube(cube) {
   cube.rotationMatrix = mat4.create();
-  mat4.rotate(
-    cube.rotationMatrix, // destination matrix
-    cube.rotationMatrix, // matrix to rotate
-    rotation, // amount to rotate in radians
-    [0, 0, 1]
-  ); // axis to rotate around (Z)
-  mat4.rotate(
-    cube.rotationMatrix, // destination matrix
-    cube.rotationMatrix, // matrix to rotate
-    rotation * 0.7, // amount to rotate in radians
-    [0, 1, 0]
-  ); // axis to rotate around (Y)
-  mat4.rotate(
-    cube.rotationMatrix, // destination matrix
-    cube.rotationMatrix, // matrix to rotate
-    rotation * 0.3, // amount to rotate in radians
-    [1, 0, 0]
-  ); // axis to rotate around (X)
+  mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, rotation * 1.0, [0, 0, 1]);
+  mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, rotation * 0.7, [0, 1, 0]);
+  mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, rotation * 0.3, [1, 0, 0]);
   rotation += deltaTime;
 }
 
