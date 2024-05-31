@@ -1,6 +1,7 @@
 import { initBuffers } from "./init-buffers.js";
 import { loadTexture } from "./init-textures.js";
 import { drawScene } from "./draw-scene.js";
+import { load_mdl, get_mdl_frame } from "./quake-mdl.js";
 
 let cube = {
   position: [-0.0, 0.0, -6.0],
@@ -13,6 +14,17 @@ let cube = {
   grounded: true,
   jumping: false
 };
+let quake_thing = {
+  position: [-0.0, 0.0, -190.0],
+  velocity: [0.0, 0.0, 0.0],
+  target_velocity: [0.0, 0.0, 0.0],
+  acceleration: [0.0, 0.0, 0.0],
+  max_velocity: [10.0, 15.0, 1.0],
+  max_acceleration: [75.0, 250.0, 1.0],
+  max_deceleration: [100.0, 75.0, 1.0],
+  grounded: true,
+  jumping: false
+}
 let rotation = 0.0;
 let deltaTime = 0;
 
@@ -135,6 +147,16 @@ function main() {
     })
   });
 
+  quake_thing.buffers = null;
+  fetch("quake/progs/ogre.mdl").then(function(response){
+    response.arrayBuffer().then(function(buffer){
+      var mdl = load_mdl(buffer);
+      let json = get_mdl_frame(gl, mdl, 0);
+      quake_thing.buffers = json.buffers;
+      quake_thing.texture = json.texture;
+    });
+  });
+
   // Flip image pixels into the bottom-to-top order that WebGL expects.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
@@ -150,7 +172,8 @@ function main() {
   let then = 0;
 
   let scene = [];
-  scene.push(cube);
+//  scene.push(cube);
+  scene.push(quake_thing);
 
   // Draw the scene repeatedly
   function render(now) {
@@ -158,7 +181,7 @@ function main() {
     deltaTime = now - then;
     then = now;
 
-    updateScene(cube, scene, pressed_keys, deltaTime);
+    updateScene(cube, quake_thing, scene, pressed_keys, deltaTime);
     drawScene(gl, programInfo, scene);
 
     requestAnimationFrame(render);
@@ -230,6 +253,13 @@ function rotateCube(cube) {
   rotation += deltaTime;
 }
 
+function rotateQuakeThing(cube) {
+  cube.rotationMatrix = mat4.create();
+  mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, Math.PI * 0.0, [0, 0, 1]);
+  mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, rotation * 1.0, [0, 1, 0]);
+  mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, Math.PI * -0.5, [1, 0, 0]);
+}
+
 function updatePlayer(cube, pressed_keys, elapsed) {
   if (cube.grounded) {
     cube.target_velocity = [ 0.0, -Infinity, 0.0 ];
@@ -292,8 +322,9 @@ function updateGrounded(scene) {
   }
 }
 
-function updateScene(player, scene, pressed_keys, elapsed) {
+function updateScene(player, quake_thing, scene, pressed_keys, elapsed) {
   rotateCube(player);
+  rotateQuakeThing(quake_thing);
 
   updatePlayer(player, pressed_keys, elapsed);
   updatePhysics(scene, elapsed);
