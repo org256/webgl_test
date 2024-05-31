@@ -102,10 +102,9 @@ function drawScene(gl, programInfo, scene) {
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
     {
-      const vertexCount = 36;
       const type = gl.UNSIGNED_SHORT;
       const offset = 0;
-      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+      gl.drawElements(gl.TRIANGLES, buffers.vertexCount, type, offset);
     }
   }
 }
