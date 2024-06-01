@@ -1,7 +1,7 @@
 import { initBuffers } from "./init-buffers.js";
 import { loadTexture } from "./init-textures.js";
 import { drawScene } from "./draw-scene.js";
-import { load_mdl, get_mdl_frame } from "./quake-mdl.js";
+import { load_mdl, get_mdl_frame, get_mdl_texture } from "./quake-mdl.js";
 
 let cube = {
   position: [-0.0, 0.0, -6.0],
@@ -27,6 +27,9 @@ let quake_thing = {
 }
 let rotation = 0.0;
 let deltaTime = 0;
+let quake_rotation = 0.0;
+let quake_animation_time = 0.0;
+let quake_animation_framerate = 10;
 
 let left_key_binding = 37;
 let right_key_binding = 39;
@@ -148,12 +151,20 @@ function main() {
   });
 
   quake_thing.buffers = null;
+  quake_thing.frames = [];
   fetch("quake/progs/ogre.mdl").then(function(response){
     response.arrayBuffer().then(function(buffer){
       var mdl = load_mdl(buffer);
-      let json = get_mdl_frame(gl, mdl, 0);
-      quake_thing.buffers = json.buffers;
-      quake_thing.texture = json.texture;
+      quake_thing.textures = [];
+      for (let i = 0; i < mdl.skin.nb; i++) {
+        quake_thing.textures[i] = get_mdl_texture(gl, mdl, i);
+      }
+      quake_thing.frames = [];
+      for (let i = 0; i < mdl.header.num_frames; i++) {
+        quake_thing.frames[i] = get_mdl_frame(gl, mdl, i);
+      }
+      quake_thing.buffers = quake_thing.frames[0];
+      quake_thing.texture = quake_thing.textures[0];
     });
   });
 
@@ -258,6 +269,17 @@ function rotateQuakeThing(cube) {
   mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, Math.PI * 0.0, [0, 0, 1]);
   mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, rotation * 1.0, [0, 1, 0]);
   mat4.rotate(cube.rotationMatrix, cube.rotationMatrix, Math.PI * -0.5, [1, 0, 0]);
+  quake_rotation += deltaTime;
+
+  if (quake_thing.frames != undefined) {
+    let frame = Math.floor(quake_animation_time * quake_animation_framerate);
+    if (frame >= quake_thing.frames.length) {
+      frame = 0;
+      quake_animation_time -= (quake_thing.frames.length / quake_animation_framerate);
+    }
+    quake_thing.buffers = quake_thing.frames[frame];
+    quake_animation_time += deltaTime;
+  }
 }
 
 function updatePlayer(cube, pressed_keys, elapsed) {

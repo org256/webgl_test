@@ -313,7 +313,11 @@ const palette = [
   [255, 243, 147, 255], [255, 247, 199, 255], [255, 255, 255, 255], [159,  91,  83, 255]
 ];
 
-function get_mdl_frame(gl, mdl, frame) {
+function get_mdl_frame(gl, mdl, index) {
+  if (mdl.frames.length <= index) {
+    return {};
+  }
+
   var buffer_data = {
     "positions": [],
     "indices": [],
@@ -324,7 +328,7 @@ function get_mdl_frame(gl, mdl, frame) {
 
   buffer_data.positions = [];
   buffer_data.vertexNormals = [];
-  for (let vert of mdl.frames[frame].frame.verts) {
+  for (let vert of mdl.frames[index].frame.verts) {
     for (let j = 0; j < 3; j++) {
       buffer_data.positions.push((mdl.header.scale[j] * vert.v[j]) + mdl.header.translate[j]);
       buffer_data.vertexNormals.push(anorms[vert.normalIndex][j]);
@@ -350,23 +354,25 @@ function get_mdl_frame(gl, mdl, frame) {
     buffer_data.textureCoordinates.push(1.0 - ((texcoord.t + 0.5) / mdl.header.skinheight));
   }
 
-  let json = {};
-  json.buffers = initBuffers(gl, buffer_data);
-  json.textureImage = "cubetexture.png";
+  return initBuffers(gl, buffer_data);
+}
+
+function get_mdl_texture(gl, mdl, index) {
+  if (mdl.skin.data.length <= index) {
+    return {};
+  }
 
   // Load texture
   let rgba = new Uint8Array(mdl.header.skinwidth * mdl.header.skinheight * 4);
   let j = 0;
-  for (let pixel of mdl.skin.data[0]) {
+  for (let pixel of mdl.skin.data[index]) {
     const rgba_pixel = palette[pixel];
     for (let k = 0; k < 4; k++) {
       rgba[j++] = rgba_pixel[k];
     }
   }
-  let texture = createTexture(gl, mdl.header.skinwidth, mdl.header.skinheight, rgba);
-  json.texture = texture;
 
-  return json;
+  return createTexture(gl, mdl.header.skinwidth, mdl.header.skinheight, rgba);
 }
 
-export { load_mdl, get_mdl_frame };
+export { load_mdl, get_mdl_frame, get_mdl_texture };
