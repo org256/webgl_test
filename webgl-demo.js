@@ -40,6 +40,8 @@ let pressed_keys = [];
 
 let textureCache = [];
 
+let new_quake_thing = "ogre.mdl";
+
 main();
 
 //
@@ -150,24 +152,6 @@ function main() {
     })
   });
 
-  quake_thing.buffers = null;
-  quake_thing.frames = [];
-  fetch("quake/progs/ogre.mdl").then(function(response){
-    response.arrayBuffer().then(function(buffer){
-      var mdl = load_mdl(buffer);
-      quake_thing.textures = [];
-      for (let i = 0; i < mdl.skin.nb; i++) {
-        quake_thing.textures[i] = get_mdl_texture(gl, mdl, i);
-      }
-      quake_thing.frames = [];
-      for (let i = 0; i < mdl.header.num_frames; i++) {
-        quake_thing.frames[i] = get_mdl_frame(gl, mdl, i);
-      }
-      quake_thing.buffers = quake_thing.frames[0];
-      quake_thing.texture = quake_thing.textures[0];
-    });
-  });
-
   // Flip image pixels into the bottom-to-top order that WebGL expects.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
@@ -191,6 +175,27 @@ function main() {
     now *= 0.001; // convert to seconds
     deltaTime = now - then;
     then = now;
+
+    if (new_quake_thing != undefined) {
+      quake_thing.buffers = null;
+      quake_thing.frames = [];
+      fetch("quake/progs/" + new_quake_thing).then(function(response){
+        response.arrayBuffer().then(function(buffer){
+          var mdl = load_mdl(buffer);
+          quake_thing.textures = [];
+          for (let i = 0; i < mdl.skin.nb; i++) {
+            quake_thing.textures[i] = get_mdl_texture(gl, mdl, i);
+          }
+          quake_thing.frames = [];
+          for (let i = 0; i < mdl.header.num_frames; i++) {
+            quake_thing.frames[i] = get_mdl_frame(gl, mdl, i);
+          }
+          quake_thing.buffers = quake_thing.frames[0];
+          quake_thing.texture = quake_thing.textures[0];
+        });
+      });
+      new_quake_thing = undefined;
+    }
 
     updateScene(cube, quake_thing, scene, pressed_keys, deltaTime);
     drawScene(gl, programInfo, scene);
@@ -352,3 +357,9 @@ function updateScene(player, quake_thing, scene, pressed_keys, elapsed) {
   updatePhysics(scene, elapsed);
   updateGrounded(scene);
 }
+
+function changeQuakeThing(thing) {
+  new_quake_thing = thing;
+}
+
+export { changeQuakeThing };

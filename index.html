@@ -10,9 +10,96 @@
       defer
     ></script>
     <script src="webgl-demo.js" type="module"></script>
+    <script type="module">
+      import { changeQuakeThing } from "./webgl-demo.js";
+      window.changeQuakeThing = changeQuakeThing;
+    </script>
   </head>
 
   <body>
+    <label for="mdl_list">Choose a model:</label>
+    <select name="mdl_list" id="mdl_list" onchange="changeQuakeThing(this.options[this.selectedIndex].value)">
+      <option value="armor.mdl">armor</option>
+      <option value="b_g_key.mdl">b_g_key</option>
+      <option value="b_s_key.mdl">b_s_key</option>
+      <option value="backpack.mdl">backpack</option>
+      <option value="bolt.mdl">bolt</option>
+      <option value="bolt2.mdl">bolt2</option>
+      <option value="bolt3.mdl">bolt3</option>
+      <option value="boss.mdl">boss</option>
+      <option value="demon.mdl">demon</option>
+      <option value="dog.mdl">dog</option>
+      <option value="end1.mdl">end1</option>
+      <option value="end2.mdl">end2</option>
+      <option value="end3.mdl">end3</option>
+      <option value="end4.mdl">end4</option>
+      <option value="enforcer.mdl">enforcer</option>
+      <option value="eyes.mdl">eyes</option>
+      <option value="fish.mdl">fish</option>
+      <option value="flame.mdl">flame</option>
+      <option value="flame2.mdl">flame2</option>
+      <option value="g_light.mdl">g_light</option>
+      <option value="g_nail.mdl">g_nail</option>
+      <option value="g_nail2.mdl">g_nail2</option>
+      <option value="g_rock.mdl">g_rock</option>
+      <option value="g_rock2.mdl">g_rock2</option>
+      <option value="g_shot.mdl">g_shot</option>
+      <option value="gib1.mdl">gib1</option>
+      <option value="gib2.mdl">gib2</option>
+      <option value="gib3.mdl">gib3</option>
+      <option value="grenade.mdl">grenade</option>
+      <option value="h_demon.mdl">h_demon</option>
+      <option value="h_dog.mdl">h_dog</option>
+      <option value="h_guard.mdl">h_guard</option>
+      <option value="h_hellkn.mdl">h_hellkn</option>
+      <option value="h_knight.mdl">h_knight</option>
+      <option value="h_mega.mdl">h_mega</option>
+      <option value="h_ogre.mdl">h_ogre</option>
+      <option value="h_player.mdl">h_player</option>
+      <option value="h_shal.mdl">h_shal</option>
+      <option value="h_shams.mdl">h_shams</option>
+      <option value="h_wizard.mdl">h_wizard</option>
+      <option value="h_zombie.mdl">h_zombie</option>
+      <option value="hknight.mdl">hknight</option>
+      <option value="invisibl.mdl">invisibl</option>
+      <option value="invulner.mdl">invulner</option>
+      <option value="k_spike.mdl">k_spike</option>
+      <option value="knight.mdl">knight</option>
+      <option value="laser.mdl">laser</option>
+      <option value="lavaball.mdl">lavaball</option>
+      <option value="m_g_key.mdl">m_g_key</option>
+      <option value="m_s_key.mdl">m_s_key</option>
+      <option value="missile.mdl">missile</option>
+      <option value="ogre.mdl" selected="true">ogre</option>
+      <option value="oldone.mdl">oldone</option>
+      <option value="player.mdl">player</option>
+      <option value="quaddama.mdl">quaddama</option>
+      <option value="s_light.mdl">s_light</option>
+      <option value="s_spike.mdl">s_spike</option>
+      <option value="shalrath.mdl">shalrath</option>
+      <option value="shambler.mdl">shambler</option>
+      <option value="soldier.mdl">soldier</option>
+      <option value="spike.mdl">spike</option>
+      <option value="suit.mdl">suit</option>
+      <option value="tarbaby.mdl">tarbaby</option>
+      <option value="teleport.mdl">teleport</option>
+      <option value="v_axe.mdl">v_axe</option>
+      <option value="v_light.mdl">v_light</option>
+      <option value="v_nail.mdl">v_nail</option>
+      <option value="v_nail2.mdl">v_nail2</option>
+      <option value="v_rock.mdl">v_rock</option>
+      <option value="v_rock2.mdl">v_rock2</option>
+      <option value="v_shot.mdl">v_shot</option>
+      <option value="v_shot2.mdl">v_shot2</option>
+      <option value="v_spike.mdl">v_spike</option>
+      <option value="w_g_key.mdl">w_g_key</option>
+      <option value="w_s_key.mdl">w_s_key</option>
+      <option value="w_spike.mdl">w_spike</option>
+      <option value="wizard.mdl">wizard</option>
+      <option value="zom_gib.mdl">zom_gib</option>
+      <option value="zombie.mdl">zombie</option>
+	  </select>
+
     <canvas id="glcanvas" width="1280" height="720"></canvas>
   </body>
 </html>
