@@ -44,10 +44,52 @@ let new_quake_thing = "ogre.mdl";
 
 main();
 
+function list_pak_contents(filename) {
+  fetch(filename).then(function(response){
+    response.arrayBuffer().then(function(buffer){
+      var view = new DataView(buffer);
+      var offset = 0;
+      function next(size) { offset += size; return offset - size; }
+      function getInt32() { return view.getInt32(next(4), true); }
+      function getFloat32() { return view.getFloat32(next(4), true); }
+      function getInt16() { return view.getInt16(next(2), true); }
+      function getUInt8Array(size) { offset += size; return new Uint8Array(buffer.slice(offset - size, offset)); }
+      function getText(size) {
+        let text = String.fromCharCode.apply(null, getUInt8Array(size));
+        for (let i = 0; i < text.length; i++) {
+          if (text[i] == '\0') {
+            text = text.substring(0, i);
+            break;
+          }
+        }
+        return text;
+      }
+    
+      let pak = {};
+      pak.id = getText(4);
+      pak.offset = getInt32();
+      pak.size = getInt32();
+      pak.files = [];
+
+      offset = pak.offset;
+      for (let i = 0; i < pak.size; i += 64) {
+        let file = {};
+        file.name = getText(56);
+        file.offset = getInt32();
+        file.size = getInt32();
+        pak.files.push(file);
+      }
+      console.log(pak);
+    });
+  });
+}
+
 //
 // start here
 //
 function main() {
+//  list_pak_contents("quake/pak0.pak");
+  
   const canvas = document.querySelector("#glcanvas");
   // Initialize the GL context
   const gl = canvas.getContext("webgl");
