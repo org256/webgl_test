@@ -110,10 +110,13 @@ function main() {
   // Vertex shader program
 
   const vsSource = `
-  attribute vec4 aVertexPosition;
-  attribute vec3 aVertexNormal;
+  attribute vec4 aVertexPosition1;
+  attribute vec4 aVertexPosition2;
+  attribute vec3 aVertexNormal1;
+  attribute vec3 aVertexNormal2;
   attribute vec2 aTextureCoord;
 
+  uniform float frame_blend_ratio;
   uniform mat4 uNormalMatrix;
   uniform mat4 uModelViewMatrix;
   uniform mat4 uProjectionMatrix;
@@ -122,6 +125,9 @@ function main() {
   varying highp vec3 vLighting;
 
   void main(void) {
+    vec4 aVertexPosition = (aVertexPosition1 * (1.0 - frame_blend_ratio)) + (aVertexPosition2 * frame_blend_ratio);
+    vec3 aVertexNormal = (aVertexNormal1 * (1.0 - frame_blend_ratio)) + (aVertexNormal2 * frame_blend_ratio);
+
     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
     vTextureCoord = aTextureCoord;
 
@@ -164,15 +170,15 @@ function main() {
   const programInfo = {
     program: shaderProgram,
     attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-      vertexNormal: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
+      vertexPosition1: gl.getAttribLocation(shaderProgram, "aVertexPosition1"),
+      vertexPosition2: gl.getAttribLocation(shaderProgram, "aVertexPosition2"),
+      vertexNormal1: gl.getAttribLocation(shaderProgram, "aVertexNormal1"),
+      vertexNormal2: gl.getAttribLocation(shaderProgram, "aVertexNormal2"),
       textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
     },
     uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(
-        shaderProgram,
-        "uProjectionMatrix"
-      ),
+      frame_blend_ratio: gl.getUniformLocation(shaderProgram, "frame_blend_ratio"), 
+      projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
       normalMatrix: gl.getUniformLocation(shaderProgram, "uNormalMatrix"),
       uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
@@ -181,10 +187,11 @@ function main() {
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
-  cube.buffers = null;
+  cube.buffers1 = null;
   fetch("cube.json").then(function(response){
     response.json().then(function(json){
-      cube.buffers = initBuffers(gl, json);
+      cube.buffers1 = initBuffers(gl, json);
+      cube.buffers2 = cube.buffers1;
       // Load texture
       let texture = textureCache[json.textureImage];
       if (texture === undefined) {
@@ -219,7 +226,8 @@ function main() {
     then = now;
 
     if (new_quake_thing != undefined) {
-      quake_thing.buffers = null;
+      quake_thing.buffers1 = null;
+      quake_thing.buffers2 = null;
       quake_thing.frames = [];
       fetch("quake/progs/" + new_quake_thing).then(function(response){
         response.arrayBuffer().then(function(buffer){
@@ -232,7 +240,8 @@ function main() {
           for (let i = 0; i < mdl.header.num_frames; i++) {
             quake_thing.frames[i] = get_mdl_frame(gl, mdl, i);
           }
-          quake_thing.buffers = quake_thing.frames[0];
+          quake_thing.buffers1 = quake_thing.frames[0];
+          quake_thing.buffers2 = quake_thing.buffers1;
           quake_thing.texture = quake_thing.textures[0];
         });
       });
@@ -319,12 +328,20 @@ function rotateQuakeThing(cube) {
   quake_rotation += deltaTime;
 
   if (quake_thing.frames != undefined) {
-    let frame = Math.floor(quake_animation_time * quake_animation_framerate);
+    let fractional_frame = quake_animation_time * quake_animation_framerate;
+    let frame = Math.floor(fractional_frame);
+    fractional_frame -= frame;
     if (frame >= quake_thing.frames.length) {
       frame = 0;
       quake_animation_time -= (quake_thing.frames.length / quake_animation_framerate);
     }
-    quake_thing.buffers = quake_thing.frames[frame];
+    let next_frame = frame + 1;
+    if (next_frame == quake_thing.frames.length) {
+      next_frame = 0;
+    }
+    quake_thing.buffers1 = quake_thing.frames[frame];
+    quake_thing.buffers2 = quake_thing.frames[next_frame];
+    quake_thing.frame_blend_ratio = fractional_frame;
     quake_animation_time += deltaTime;
   }
 }

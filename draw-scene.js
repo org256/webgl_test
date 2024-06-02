@@ -26,10 +26,11 @@ function drawScene(gl, programInfo, scene) {
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
   for (let cube of scene) {
-    let buffers = cube.buffers;
+    let buffers1 = cube.buffers1;
+    let buffers2 = cube.buffers2;
     let texture = cube.texture;
 
-    if (buffers == null) {
+    if ((buffers1 == null) || (buffers2 == null)) {
       return;
     }
   
@@ -63,17 +64,19 @@ function drawScene(gl, programInfo, scene) {
 
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
-    setPositionAttribute(gl, buffers, programInfo);
+    setPositionAttribute(gl, buffers1, buffers2, programInfo);
 
-    setTextureAttribute(gl, buffers, programInfo);
+    setTextureAttribute(gl, buffers1, programInfo);
 
     // Tell WebGL which indices to use to index the vertices
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers1.indices);
 
-    setNormalAttribute(gl, buffers, programInfo);
+    setNormalAttribute(gl, buffers1, buffers2, programInfo);
 
     // Tell WebGL to use our program when drawing
     gl.useProgram(programInfo.program);
+
+    gl.uniform1f(programInfo.uniformLocations.frame_blend_ratio, cube.frame_blend_ratio);
 
     // Set the shader uniforms
     gl.uniformMatrix4fv(
@@ -104,30 +107,42 @@ function drawScene(gl, programInfo, scene) {
     {
       const type = gl.UNSIGNED_SHORT;
       const offset = 0;
-      gl.drawElements(gl.TRIANGLES, buffers.vertexCount, type, offset);
+      gl.drawElements(gl.TRIANGLES, buffers1.vertexCount, type, offset);
     }
   }
 }
 
 // Tell WebGL how to pull out the positions from the position
 // buffer into the vertexPosition attribute.
-function setPositionAttribute(gl, buffers, programInfo) {
+function setPositionAttribute(gl, buffers1, buffers2, programInfo) {
   const numComponents = 3;
   const type = gl.FLOAT; // the data in the buffer is 32bit floats
   const normalize = false; // don't normalize
   const stride = 0; // how many bytes to get from one set of values to the next
   // 0 = use type and numComponents above
   const offset = 0; // how many bytes inside the buffer to start from
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers1.position);
   gl.vertexAttribPointer(
-    programInfo.attribLocations.vertexPosition,
+    programInfo.attribLocations.vertexPosition1,
     numComponents,
     type,
     normalize,
     stride,
     offset
   );
-  gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+  gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition1);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers2.position);
+  gl.vertexAttribPointer(
+    programInfo.attribLocations.vertexPosition2,
+    numComponents,
+    type,
+    normalize,
+    stride,
+    offset
+  );
+  gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition2);
+
 }
 
 // Tell WebGL how to pull out the colors from the color buffer
@@ -171,22 +186,33 @@ function setTextureAttribute(gl, buffers, programInfo) {
 
 // Tell WebGL how to pull out the normals from
 // the normal buffer into the vertexNormal attribute.
-function setNormalAttribute(gl, buffers, programInfo) {
+function setNormalAttribute(gl, buffers1, buffers2, programInfo) {
   const numComponents = 3;
   const type = gl.FLOAT;
   const normalize = false;
   const stride = 0;
   const offset = 0;
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers1.normal);
   gl.vertexAttribPointer(
-    programInfo.attribLocations.vertexNormal,
+    programInfo.attribLocations.vertexNormal1,
     numComponents,
     type,
     normalize,
     stride,
     offset
   );
-  gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
+  gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal1);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers2.normal);
+  gl.vertexAttribPointer(
+    programInfo.attribLocations.vertexNormal2,
+    numComponents,
+    type,
+    normalize,
+    stride,
+    offset
+  );
+  gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal2);
 }
 
 export { drawScene };
