@@ -183,7 +183,7 @@ function main() {
         response.arrayBuffer().then(function(buffer){
           var mdl = load_mdl(buffer);
           quake_thing.textures = [];
-          for (let i = 0; i < mdl.skin.nb; i++) {
+          for (let i = 0; i < mdl.header.num_skins; i++) {
             quake_thing.textures[i] = get_mdl_texture(gl, mdl, i);
           }
           quake_thing.frames = [];

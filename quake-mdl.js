@@ -9,11 +9,20 @@ function load_mdl(buffer) {
   function getFloat32() { return view.getFloat32(next(4), true); }
   function getInt16() { return view.getInt16(next(2), true); }
   function getUInt8Array(size) { offset += size; return new Uint8Array(buffer.slice(offset - size, offset)); }
-  function getText(size) { return String.fromCharCode.apply(null, getUInt8Array(size)); }
+  function getText(size) {
+    let text = String.fromCharCode.apply(null, getUInt8Array(size));
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] == '\0') {
+        text = text.substring(0, i);
+        break;
+      }
+    }
+    return text;
+  }
 
   var mdl = {
     header: {
-      ident: getInt32(),
+      ident: getText(4),
       version: getInt32(),
 
       scale: [getFloat32(), getFloat32(), getFloat32()],
@@ -33,26 +42,30 @@ function load_mdl(buffer) {
       flags: getInt32(),
       size: getFloat32()
     },
-    skin: {
-      group: getInt32(),
-      nb: 1,
-      time: 0
-    },
+    skins: [],
     texcoords: [],
     triangles: [],
     frames: []
   };
 
-  if (mdl.skin.group == 1) {
-    mdl.skin.nb = getInt32();
-    mdl.skin.time = [];
-    for (let i = 0; i < mdl.skin.nb; i++) {
-      mdl.skin.time[i] = getFloat32();
+  for (let i = 0; i < mdl.header.num_skins; i++) {
+    let skin = {
+      group: getInt32(),
+      nb: 1,
+      time: [Infinity]
+    };
+    if (skin.group == 1) {
+      skin.nb = getInt32();
+      skin.time = [];
+      for (let i = 0; i < mdl.header.num_skins; i++) {
+        skin.time[i] = getFloat32();
+      }
     }
-  }
-  mdl.skin.data = [];
-  for (let i = 0; i < mdl.skin.nb; i++) {
-    mdl.skin.data[i] = getUInt8Array(mdl.header.skinwidth * mdl.header.skinheight);
+    skin.data = [];
+    for (let i = 0; i < skin.nb; i++) {
+      skin.data[i] = getUInt8Array(mdl.header.skinwidth * mdl.header.skinheight);
+    }
+    mdl.skins.push(skin);
   }
 
   for (let i = 0; i < mdl.header.num_verts; i++) {
@@ -64,19 +77,46 @@ function load_mdl(buffer) {
   }
 
   for (let i = 0; i < mdl.header.num_frames; i++) {
-    mdl.frames[i] = {
-      type: getInt32(),
-      frame: {
-        bboxmin: { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] },
-        bboxmax: { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] },
-        name: getText(16),
-        verts: []
+    let type = getInt32();
+    if (type == 1) {
+      let count = getInt32();
+      let min = { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] };
+      let max = { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] };
+      for (let j = 0; j < count; j++) {
+        console.log(getFloat32());
       }
-    };
-    for (let j = 0; j < mdl.header.num_verts; j++) {
-      mdl.frames[i].frame.verts[j] = { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] };
+      for (let j = 0; j < count; j++) {
+        let frame = {
+          type: type,
+          frame: {
+            bboxmin: { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] },
+            bboxmax: { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] },
+            name: getText(16),
+            verts: []
+          }
+        };
+        for (let j = 0; j < mdl.header.num_verts; j++) {
+          frame.frame.verts[j] = { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] };
+        }
+        mdl.frames.push(frame);
+      }
+    } else {
+      mdl.frames.push({
+        type: type,
+        frame: {
+          bboxmin: { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] },
+          bboxmax: { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] },
+          name: getText(16),
+          verts: []
+        }
+      });
+
+      for (let j = 0; j < mdl.header.num_verts; j++) {
+        mdl.frames[i].frame.verts[j] = { v: getUInt8Array(3), normalIndex: getUInt8Array(1)[0] };
+      }
     }
   }
+  console.log(mdl);
 
   return mdl;
 }
@@ -358,14 +398,14 @@ function get_mdl_frame(gl, mdl, index) {
 }
 
 function get_mdl_texture(gl, mdl, index) {
-  if (mdl.skin.data.length <= index) {
+  if (mdl.skins.length <= index) {
     return {};
   }
 
   // Load texture
   let rgba = new Uint8Array(mdl.header.skinwidth * mdl.header.skinheight * 4);
   let j = 0;
-  for (let pixel of mdl.skin.data[index]) {
+  for (let pixel of mdl.skins[index].data[0]) {
     const rgba_pixel = palette[pixel];
     for (let k = 0; k < 4; k++) {
       rgba[j++] = rgba_pixel[k];
